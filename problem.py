@@ -78,19 +78,19 @@ class LPProblem:
 
         cs = np.concatenate([np.take(self.c, index1-1), -np.take(self.c, index1-1),
                              np.take(self.c, index2-1), -np.take(self.c, index3-1),
-                             np.take(self.c, index4-1), np.zeros(n[3])])
+                             np.take(self.c, index4-1), np.zeros(n[3])], dtype=np.float64)
 
         As = np.vstack([
             np.hstack([np.take(self.A, index1-1, axis=1), -np.take(self.A, index1-1, axis=1),
                        np.take(self.A, index2-1, axis=1), -np.take(self.A, index3-1, axis=1),
                        np.take(self.A, index4-1, axis=1), np.zeros((m, n[3]))]),
             np.hstack([np.zeros((n[3], 2*sum(n[:3]))), np.eye(n[3]), np.eye(n[3])])
-        ])
+        ], dtype=np.float64)
         
         bs = np.concatenate([self.b - np.dot(self.A[:, index2-1], self.lo[index2-1]) -
                              np.dot(self.A[:, index3-1], self.hi[index3-1]) -
                              np.dot(self.A[:, index4-1], self.lo[index4-1]),
-                             self.hi[index4-1] - self.lo[index4-1]])
+                             self.hi[index4-1] - self.lo[index4-1]], dtype=np.float64)
 
         self.A = As
         self.b = bs
@@ -132,12 +132,12 @@ if __name__ == "__main__":
         [[-2, 1],
          [-1, 2],
          [1, 0],
-        ])
-    b = np.array([2, 7, 3])
-    c = np.array([-1, -2])
+        ], dtype=np.float64)
+    b = np.array([2, 7, 3], dtype=np.float64)
+    c = np.array([-1, -2], dtype=np.float64)
     
-    lo = np.array([0, 0])
-    hi = np.array([5, 5])
+    lo = np.array([0, 0], dtype=np.float64)
+    hi = np.array([5, 5], dtype=np.float64)
                    
     P = LPProblem(A, b, c)
     P.internal_point(tolerance=1e-8)

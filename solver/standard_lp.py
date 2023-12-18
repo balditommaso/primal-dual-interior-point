@@ -13,7 +13,7 @@ def solve_standard_lp(A, b, c, max_it=100, tolerance=1e-8, verbose=False):
     
     x0, lam0, s0 = starting.starting_point(A,b,c)
     
-    for iter in range(max_it):
+    for iter in range(max_it+1):
         print('-'*80)
         print(f'iter [{iter}]:\nx:\t{x0},\nlam:\t{lam0},\ns:\t{s0}')
         
@@ -27,7 +27,7 @@ def solve_standard_lp(A, b, c, max_it=100, tolerance=1e-8, verbose=False):
         alpha_aff_pri = utils.alpha_max(x0, x_aff, 1.0)
         alpha_aff_dual = utils.alpha_max(s0, s_aff, 1.0)
         
-        mu = np.mean(rxs)
+        mu = np.mean(rxs, dtype=np.float64)
         
         # Calculate mu_aff
         mu_aff = np.dot(x0 + alpha_aff_pri * x_aff, s0 + alpha_aff_dual * s_aff) / n
@@ -50,21 +50,24 @@ def solve_standard_lp(A, b, c, max_it=100, tolerance=1e-8, verbose=False):
         
         alpha_max_pri = utils.alpha_max(x0, dx, np.inf)
         alpha_max_dual = utils.alpha_max(s0, ds, np.inf)
-        
+        print(alpha_max_pri, alpha_max_dual)
         if scaling == 0:
             alpha_pri = min(0.99 * alpha_max_pri, 1)
             alpha_dual = min(0.99 * alpha_max_dual, 1)
         else:
+            # TODO review this part
             x1_pri = x0 + alpha_max_pri * dx
             s1_dual = s0 + alpha_max_dual * ds
-            mu_p = (x1_pri @ s1_dual) / n
+            mu_p = np.dot(x1_pri,s1_dual) / n
+            
             
             xind = np.argmin(x1_pri)
-            
-            f_pri = (gamma_f * mu_p / s1_dual[xind] - x0[xind]) / alpha_max_pri / dx[xind]
             sind = np.argmin(s1_dual)
             
-            f_dual = (gamma_f * mu_p / x1_pri[sind] - s0[sind]) / alpha_max_dual / ds[sind]
+            assert x1_pri[xind] == 0
+            f_pri = (gamma_f * mu_p / s1_dual[xind] - x0[xind]) / (alpha_max_pri * dx[xind])
+            assert s1_dual[sind] == 0
+            f_dual = (gamma_f * mu_p / x1_pri[sind] - s0[sind]) / (alpha_max_dual * ds[sind])
             
             alpha_pri = max(1 - gamma_f, f_pri) * alpha_max_pri
             alpha_dual = max(1 - gamma_f, f_dual) * alpha_max_dual
@@ -116,13 +119,13 @@ def fact3(A, x, s):
     
     f, _ = scipy.linalg.lu_factor(M)
 
-    return f
+    return f.astype(np.float64)
 
 def solve3(f, rb, rc, rxs):
     m = rb.shape[0]
     n = rc.shape[0]
     
-    b = np.hstack((-rb, -rc, -rxs))
+    b = np.hstack((-rb, -rc, -rxs), dtype=np.float64)
     # Solve the linear system of equations A * x = b
     b = np.linalg.solve(f, b.T)
 
@@ -132,4 +135,4 @@ def solve3(f, rb, rc, rxs):
     ds = b[m+n:]
 
     # Return the solutions
-    return dlam, dx, ds
+    return dlam.astype(np.float64), dx.astype(np.float64), ds.astype(np.float64)
