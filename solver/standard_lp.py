@@ -5,7 +5,7 @@ import scipy
 def solve_standard_lp(A, b, c, max_it=100, tolerance=1e-8, verbose=False):
     gamma_f = 0.01
     
-    scaling = 1
+    scaling = 0
     
     m, n = A.shape
     
@@ -14,6 +14,9 @@ def solve_standard_lp(A, b, c, max_it=100, tolerance=1e-8, verbose=False):
     x0, lam0, s0 = starting.starting_point(A,b,c)
     
     for iter in range(max_it):
+        print('-'*80)
+        print(f'iter [{iter}]:\nx:\t{x0},\nlam:\t{lam0},\ns:\t{s0}')
+        
         f3 = fact3(A, x0, s0)
         rb = A @ x0 - b
         rc = A.T @ lam0 + s0 - c
@@ -66,11 +69,10 @@ def solve_standard_lp(A, b, c, max_it=100, tolerance=1e-8, verbose=False):
             alpha_pri = max(1 - gamma_f, f_pri) * alpha_max_pri
             alpha_dual = max(1 - gamma_f, f_dual) * alpha_max_dual
             
-        
         if alpha_pri > 1e308 or alpha_dual > 1e308:
             # TODO: check this part
             print("this problem is unbounded")
-            return False
+            return x0, lam0, s0, False, iter
 
         x1 = x0 + alpha_pri * dx
         lam1 = lam0 + alpha_dual * dlam
@@ -96,7 +98,6 @@ def solve_standard_lp(A, b, c, max_it=100, tolerance=1e-8, verbose=False):
         lam0 = lam1
         s0 = s1
         
-        break # DEBUG
     
 
 def fact3(A, x, s):
