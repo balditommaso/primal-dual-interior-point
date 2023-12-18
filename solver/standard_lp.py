@@ -31,7 +31,6 @@ def solve_standard_lp(A, b, c, max_it=100, tolerance=1e-8, verbose=False):
         
         # Calculate mu_aff
         mu_aff = np.dot(x0 + alpha_aff_pri * x_aff, s0 + alpha_aff_dual * s_aff) / n
-
         
         # centering parameter sigma
         
@@ -50,27 +49,28 @@ def solve_standard_lp(A, b, c, max_it=100, tolerance=1e-8, verbose=False):
         
         alpha_max_pri = utils.alpha_max(x0, dx, np.inf)
         alpha_max_dual = utils.alpha_max(s0, ds, np.inf)
-        print(alpha_max_pri, alpha_max_dual)
+        
         if scaling == 0:
             alpha_pri = min(0.99 * alpha_max_pri, 1)
             alpha_dual = min(0.99 * alpha_max_dual, 1)
         else:
+            pass
             # TODO review this part
-            x1_pri = x0 + alpha_max_pri * dx
-            s1_dual = s0 + alpha_max_dual * ds
-            mu_p = np.dot(x1_pri,s1_dual) / n
+            # x1_pri = x0 + alpha_max_pri * dx
+            # s1_dual = s0 + alpha_max_dual * ds
+            # mu_p = np.dot(x1_pri,s1_dual) / n
             
             
-            xind = np.argmin(x1_pri)
-            sind = np.argmin(s1_dual)
+            # xind = np.argmin(x1_pri)
+            # sind = np.argmin(s1_dual)
             
-            assert x1_pri[xind] == 0
-            f_pri = (gamma_f * mu_p / s1_dual[xind] - x0[xind]) / (alpha_max_pri * dx[xind])
-            assert s1_dual[sind] == 0
-            f_dual = (gamma_f * mu_p / x1_pri[sind] - s0[sind]) / (alpha_max_dual * ds[sind])
+            # assert x1_pri[xind] == 0
+            # f_pri = (gamma_f * mu_p / s1_dual[xind] - x0[xind]) / (alpha_max_pri * dx[xind])
+            # assert s1_dual[sind] == 0
+            # f_dual = (gamma_f * mu_p / x1_pri[sind] - s0[sind]) / (alpha_max_dual * ds[sind])
             
-            alpha_pri = max(1 - gamma_f, f_pri) * alpha_max_pri
-            alpha_dual = max(1 - gamma_f, f_dual) * alpha_max_dual
+            # alpha_pri = max(1 - gamma_f, f_pri) * alpha_max_pri
+            # alpha_dual = max(1 - gamma_f, f_dual) * alpha_max_dual
             
         if alpha_pri > 1e308 or alpha_dual > 1e308:
             # TODO: check this part
@@ -83,13 +83,14 @@ def solve_standard_lp(A, b, c, max_it=100, tolerance=1e-8, verbose=False):
         
         # termination
         r1 = np.linalg.norm(A @ x1 - b) / (1 + np.linalg.norm(b))
-        
+        print("r1", r1)
         if r1 < tolerance:
             r2 = np.linalg.norm(A.T @ lam1 + s1 - c) / (1 + np.linalg.norm(c))
             
             if r2 < tolerance:
-                cx = c @ x1
-                r3 = np.abs(cx - b @ lam1) / (1 + np.abs(cx))
+                cx = np.dot(c, x1)
+                print("cx", cx)
+                r3 = np.abs(cx - np.dot(b, lam1)) / (1 + np.abs(cx))
                 
                 if r3 < tolerance:
                     return x1, lam1, s1, True, iter

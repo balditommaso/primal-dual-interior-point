@@ -1,4 +1,6 @@
 import numpy as np
+
+import matplotlib.pyplot as plt
 from utils import feasibility
 from solver import standard_lp
 
@@ -81,11 +83,11 @@ class LPProblem:
                              np.take(self.c, index4-1), np.zeros(n[3])], dtype=np.float64)
 
         As = np.vstack([
-            np.hstack([np.take(self.A, index1-1, axis=1), -np.take(self.A, index1-1, axis=1),
-                       np.take(self.A, index2-1, axis=1), -np.take(self.A, index3-1, axis=1),
-                       np.take(self.A, index4-1, axis=1), np.zeros((m, n[3]))]),
-            np.hstack([np.zeros((n[3], 2*sum(n[:3]))), np.eye(n[3]), np.eye(n[3])])
-        ], dtype=np.float64)
+                    np.hstack([np.take(self.A, index1-1, axis=1), -np.take(self.A, index1-1, axis=1),
+                            np.take(self.A, index2-1, axis=1), -np.take(self.A, index3-1, axis=1),
+                            np.take(self.A, index4-1, axis=1), np.zeros((m, n[3]))]),
+                    np.hstack([np.zeros((n[3], 2*sum(n[:3]))), np.eye(n[3]), np.eye(n[3])])
+                ], dtype=np.float64)
         
         bs = np.concatenate([self.b - np.dot(self.A[:, index2-1], self.lo[index2-1]) -
                              np.dot(self.A[:, index3-1], self.hi[index3-1]) -
@@ -113,7 +115,7 @@ class LPProblem:
         self.presolve()
         
         # TODO: convert to standard form
-        ind1, ind2, ind3, ind4 = self.convert_to_standard()
+        # ind1, ind2, ind3, ind4 = self.convert_to_standard()
         print(self)
         # print(result)
         # detect infeasibility
@@ -129,7 +131,7 @@ class LPProblem:
 if __name__ == "__main__":
     
     A = np.array(
-        [[-2, 1],
+        [[-2, 1,],
          [-1, 2],
          [1, 0],
         ], dtype=np.float64)
@@ -138,6 +140,48 @@ if __name__ == "__main__":
     
     lo = np.array([0, 0], dtype=np.float64)
     hi = np.array([5, 5], dtype=np.float64)
+    
+    # convert to standard
+    c_std = np.concatenate([c, np.zeros((b.shape[0],))])
+    b_std = np.concatenate([b, np.zeros((c_std.shape[0],))])
+    A_std = np.vstack([
+        np.hstack([A, np.eye(b.shape[0])]),
+        -np.eye(c_std.shape[0])
+    ])
+    
+    # # Constraint 1: -2x + y <= 2
+    # x_values_c1 = np.linspace(0, 10, 100)
+    # y_constraint1 = 2 + 2 * x_values_c1
+
+    # # Constraint 2: -x + 2y <= 7
+    # x_values_c2 = np.linspace(0, 10, 100)
+    # y_constraint2 = (x_values_c2 + 7) / 2
+
+    # # Constraint 3: x <= 3
+    # x_constraint1 = np.full(100, 3)
+    # y_values_c1 = np.linspace(0, 10, 100)
+
+    # # Plotting
+    # plt.figure(figsize=(8, 6))
+    # plt.plot(x_constraint1, y_values_c1)
+    # plt.plot(x_values_c2, y_constraint2)
+    # plt.plot(x_values_c1, y_constraint1)
+    
+    # # plotting the direction of the objective function (example: c=[1, 1])
+    # plt.quiver(0, 0, c[0], c[1], angles='xy', scale_units='xy', scale=2, color='green', label='Objective Function Direction')
+
+
+    # # Additional plot settings
+    # plt.axhline(0, color='black', linewidth=0.5, linestyle='--')
+    # plt.axvline(0, color='black', linewidth=0.5, linestyle='--')
+    # plt.xlabel('x-axis')
+    # plt.ylabel('y-axis')
+    # plt.title('LP Problem Constraints')
+    # plt.legend()
+    # plt.grid(True)
+    # plt.show()
+
+    
                    
-    P = LPProblem(A, b, c)
+    P = LPProblem(A_std, b_std, c_std)
     P.internal_point(tolerance=1e-8)
