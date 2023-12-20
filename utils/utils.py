@@ -11,8 +11,7 @@ def alpha_max(x, dx, hi):
     alpha = -1.0
     for i in range(n):
         if dx[i] < 0:
-            a = x[i] / -dx[i]
-            
+            a = -x[i] / dx[i]
             if alpha < 0:
                 alpha = a
             else:
@@ -24,3 +23,4 @@ def alpha_max(x, dx, hi):
     alpha = min(alpha, hi)
     
     return alpha
+

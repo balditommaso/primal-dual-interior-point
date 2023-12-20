@@ -11,6 +11,7 @@ def starting_point(A, b, c):
     x = np.linalg.solve(f, b)
     x = A.T @ x
 
+    print(A.shape, c.shape)
     lam = A @ c
     lam = np.linalg.solve(f, lam)
 
