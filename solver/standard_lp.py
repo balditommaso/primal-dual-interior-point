@@ -2,7 +2,7 @@ from utils import starting, utils
 import numpy as np
 import scipy
 
-def solve_standard_lp(A, b, c, max_it=100, tolerance=1e-8, verbose=False):    
+def solve_standard_lp(A, b, c, max_it=5, tolerance=1e-8, verbose=False):    
     m, n = A.shape
     
     # compute initial value
@@ -13,18 +13,16 @@ def solve_standard_lp(A, b, c, max_it=100, tolerance=1e-8, verbose=False):
         print('-'*80)
         print(f'iter [{iter}]:\nx:\t{x0},\nlam:\t{lam0},\ns:\t{s0}')
         
-        f3 = fact3(A, x0, s0)
+        f3, pivots = fact3(A, x0, s0)
         rb = A @ x0 - b
         rc = A.T @ lam0 + s0 - c
         rxs = x0 * s0
-        lam_aff, x_aff, s_aff = solve3(f3, rb, rc, rxs)
+        lam_aff, x_aff, s_aff = solve3(f3, pivots, rb, rc, rxs)
         
         # compute alpha_aff^pr, alpha_aff^dual, mu_aff
         alpha_aff_pri = utils.alpha_max(x0, x_aff, 1.0)
         alpha_aff_dual = utils.alpha_max(s0, s_aff, 1.0)
-
-        assert alpha_aff_pri <= 1 and alpha_aff_pri >= 0
-        assert alpha_aff_dual <= 1 and alpha_aff_dual >= 0
+        print(alpha_aff_pri, alpha_aff_dual)
         
         mu = np.mean(rxs, dtype=np.float64)
         # Calculate mu_aff
@@ -38,16 +36,16 @@ def solve_standard_lp(A, b, c, max_it=100, tolerance=1e-8, verbose=False):
         rc = np.zeros((n,))
         rxs = x_aff * s_aff - sigma * mu
         
-        lam_cc, x_cc, s_cc = solve3(f3, rb, rc, rxs)
+        lam_cc, x_cc, s_cc = solve3(f3, pivots, rb, rc, rxs)
         
         # compute the search direction step bounderies
         dx = x_aff + x_cc
         dlam = lam_aff + lam_cc
-        ds = s_aff = s_cc
+        ds = s_aff + s_cc
         
         alpha_max_pri = utils.alpha_max(x0, dx, np.inf)
         alpha_max_dual = utils.alpha_max(s0, ds, np.inf)
-        print(alpha_max_pri, alpha_max_dual)
+        
         alpha_pri = min(0.99 * alpha_max_pri, 1)
         alpha_dual = min(0.99 * alpha_max_dual, 1)
 
@@ -97,22 +95,22 @@ def fact3(A, x, s):
     M3 = np.hstack((np.zeros((n, m)), S, X))
     M = np.vstack((M1, M2, M3))
     
-    f, _ = scipy.linalg.lu_factor(M)
+    f, pivots = scipy.linalg.lu_factor(M)
 
-    return f.astype(np.float64)
+    return f.astype(np.float64), pivots
 
-def solve3(f, rb, rc, rxs):
+def solve3(f, pivots, rb, rc, rxs):
     m = rb.shape[0]
     n = rc.shape[0]
     
     b = np.hstack((-rb, -rc, -rxs), dtype=np.float64)
     # Solve the linear system of equations A * x = b
-    b = np.linalg.solve(f, b.T)
+    b = scipy.linalg.lu_solve((f, pivots), b.T)
 
     # Extract the solution into separate arrays for dlam, dx, and ds
     dlam = b[:m]
     dx = b[m:m+n]
     ds = b[m+n:]
-
+    print("Direction: ",dlam, dx, ds)
     # Return the solutions
     return dlam.astype(np.float64), dx.astype(np.float64), ds.astype(np.float64)

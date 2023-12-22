@@ -14,34 +14,53 @@ include("iplp.jl")
 # include("solve_standardlp.jl")
 # include("phaseone.jl")
 
-problem_list = ["lp_afiro","lp_brandy","lp_fit1d","lp_adlittle",
-"lp_agg","lp_ganges","lp_stocfor1", "lp_25fv47", "lpi_chemcom"]
+# problem_list = ["lp_afiro","lp_brandy","lp_fit1d","lp_adlittle",
+# "lp_agg","lp_ganges","lp_stocfor1", "lp_25fv47", "lpi_chemcom"]
 
-for i = 1:length(problem_list)
-    @printf("%d. %s\n", i, problem_list[i])
-end
-@printf("0. other\n")
-@printf("Which problem to solve? ")
+# for i = 1:length(problem_list)
+#     @printf("%d. %s\n", i, problem_list[i])
+# end
+# @printf("0. other\n")
+# @printf("Which problem to solve? ")
 
-k = parse(Int,readline(stdin))
+# k = parse(Int,readline(stdin))
 
-if k == 0
-    @printf("Please enter the problem name (e.g. lp_afiro): ")
-    name = "LPnetlib/"*readline(stdin)[1:end-1]
-else
-    name = "LPnetlib/"*problem_list[k]
-end
+# if k == 0
+#     @printf("Please enter the problem name (e.g. lp_afiro): ")
+#     name = "LPnetlib/"*readline(stdin)[1:end-1]
+# else
+#     name = "LPnetlib/"*problem_list[k]
+# end
 
-@printf("Solving %s.", name)
+# @printf("Solving %s.", name)
 
-try global P = convert_matrixdepot(mdopen(name))
-catch 
-    mdopen(name)
-    global P = convert_matrixdepot(mdopen(name))
-end
+# try global P = convert_matrixdepot(mdopen(name))
+# catch 
+#     mdopen(name)
+#     global P = convert_matrixdepot(mdopen(name))
+# end
+
+A = [
+    -2.0  1.0  1.0  0.0  0.0;
+    -1.0  2.0  0.0  1.0  0.0;
+     1.0  0.0  0.0  0.0  1.0
+]
+
+b = [2.0, 7.0, 3.0]
+
+c = [-1.0, -2.0, 0.0, 0.0, 0.0]
+
+println("Matrix A:")
+println(A)
+
+println("\nVector b:")
+println(b)
+
+println("\nVector c:")
+println(c)
 
 tol=1e-8
-solution = @time iplp(P, tol; maxit=100)
+solution = @time iplp(A, b, c, tol; maxit=100)
 
 
 # @show solution.flag

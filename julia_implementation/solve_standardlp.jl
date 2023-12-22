@@ -1,4 +1,4 @@
-function solve_standardlp(A,b,c,maxit=100,tol=1e-8,verbose=false)
+function solve_standardlp(A,b,c,maxit=5,tol=1e-8,verbose=false)
     ### definition of gamma_f
 
     gamma_f = .01
@@ -18,15 +18,21 @@ function solve_standardlp(A,b,c,maxit=100,tol=1e-8,verbose=false)
 
     iter = 0
 
-    if verbose == true
-        @printf("%3d %9.2e %9.2e %9.4g %9.4g\n", 
-                 iter, mean(x0.*s0), 
-                 norm([A'*lambda0 + s0 - c; A*x0 - b; x0.*s0])/norm([b;c]), 
-                 0., 0.)
-    end
+    # if verbose == true
+    #     @printf("%3d %9.2e %9.2e %9.4g %9.4g\n", 
+    #              iter, mean(x0.*s0), 
+    #              norm([A'*lambda0 + s0 - c; A*x0 - b; x0.*s0])/norm([b;c]), 
+    #              0., 0.)
+    # end
 
     for iter=1:maxit
         ### solve 10.1
+
+        # Print the dashed line
+        println('-' ^ 80)
+        # Print the iteration information
+        println("iter [$iter]:")
+        println("x:\t$x0,\nlam:\t$lambda0,\ns:\t$s0")
 
         f3 = fact3(A,x0,s0)
 
@@ -102,12 +108,12 @@ function solve_standardlp(A,b,c,maxit=100,tol=1e-8,verbose=false)
 
 
         # @show dot(c,x1)
-        if verbose == true
-            @printf("%3d %9.2e %9.2e %9.4g %9.4g\n",
-                    iter, mu,
-                    norm([A'*lambda0 + s0 - c; A*x0 - b; x0.*s0])/norm([b;c]), 
-                    alpha_pri, alpha_dual);
-        end
+        # if verbose == true
+        #     @printf("%3d %9.2e %9.2e %9.4g %9.4g\n",
+        #             iter, mu,
+        #             norm([A'*lambda0 + s0 - c; A*x0 - b; x0.*s0])/norm([b;c]), 
+        #             alpha_pri, alpha_dual);
+        # end
 
         ### termination
 

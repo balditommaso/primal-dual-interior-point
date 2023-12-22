@@ -1,4 +1,4 @@
-using MatrixDepot
+# using MatrixDepot
 using Test
 using Printf
 using SparseArrays
@@ -74,38 +74,38 @@ norm([As'*lam + s - cs; As*xs - bs; xs.*s])/norm([bs;cs]) <= tol
 and fails if this takes more than maxit iterations.
 """
 
-function iplp(Problem, tol; maxit=100)
+function iplp(A, b, c, tol; maxit=100)
     ### test input data
     
-    @show m0,n0 = size(Problem.A)
+    # @show m0,n0 = size(Problem.A)
     
-    if length(Problem.b) != m0 || length(Problem.c) != n0 || length(Problem.lo) != n0 || length(Problem.hi) != n0
-        DimensionMismatch("Dimension of matrices A, b, c mismatch. Check your input.")
-    end
+    # if length(Problem.b) != m0 || length(Problem.c) != n0 || length(Problem.lo) != n0 || length(Problem.hi) != n0
+    #     DimensionMismatch("Dimension of matrices A, b, c mismatch. Check your input.")
+    # end
 
-    @printf("Problem size: %d, %d\n",m0,n0)
+    # @printf("Problem size: %d, %d\n",m0,n0)
 
     ### presolve stage
 
-    Ps, ind0c, dup_main_c, ind_dup_c = presolve(Problem)
+    # Ps, ind0c, dup_main_c, ind_dup_c = presolve(Problem)
 
-    ### convert to standard form
-    @show size(Ps.A)
-    @show rank(Array{Float64}(Ps.A))
+    # ### convert to standard form
+    # @show size(Ps.A)
+    # @show rank(Array{Float64}(Ps.A))
     
-    A,b,c,ind1,ind2,ind3,ind4 = convert2standard(Ps)
-    @show size(A)
-    @show rank(Array{Float64}(A))
-    ### detect infeasibility
+    # A,b,c,ind1,ind2,ind3,ind4 = convert2standard(Ps)
+    # @show size(A)
+    # @show rank(Array{Float64}(A))
+    # ### detect infeasibility
 
-    if phaseone(A,b)
-        @warn "This problem is infeasible."
-        return IplpSolution(vec([0.]),false,vec(c),A,vec(b),vec([0.]),vec([0.]),vec([0.]))
-    end
+    # if phaseone(A,b)
+    #     @warn "This problem is infeasible."
+    #     return IplpSolution(vec([0.]),false,vec(c),A,vec(b),vec([0.]),vec([0.]),vec([0.]))
+    # end
 
-    @printf("\n=============== MPCIP solver ===============\n%3s %6s %11s %9s %9s\n", "ITER", "MU", "RESIDUAL", "ALPHAX", "ALPHAS")
+    # @printf("\n=============== MPCIP solver ===============\n%3s %6s %11s %9s %9s\n", "ITER", "MU", "RESIDUAL", "ALPHAX", "ALPHAS")
 
-    ### solve the original problem
+    # ### solve the original problem
 
     x1,lambda1,s1,flag,iter = solve_standardlp(A,b,c,maxit,tol,true)
 
@@ -113,15 +113,15 @@ function iplp(Problem, tol; maxit=100)
 
     # @show iter
 
-    x = get_x(Ps,ind1,ind2,ind3,ind4,x1)
+    # x = get_x(Ps,ind1,ind2,ind3,ind4,x1)
 
-    x = revProb(Problem, ind0c, dup_main_c, ind_dup_c, x)
+    # x = revProb(Problem, ind0c, dup_main_c, ind_dup_c, x)
 
     if flag == true
-        @printf("This problem is solved with optimal value of %.2f.\n\n", dot(Problem.c, x))
+        @printf("This problem is solved with optimal value of %.2f.\n\n", dot(c, x1))
     else
         @printf("\nThis problem does not converge in %d steps.", maxit)
     end
 
-    return IplpSolution(vec(x),flag,vec(c),A,vec(b),vec(x1),vec(lambda1),vec(s1))
+    # return IplpSolution(vec(x),flag,vec(c),A,vec(b),vec(x1),vec(lambda1),vec(s1))
 end

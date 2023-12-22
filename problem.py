@@ -119,12 +119,12 @@ class LPProblem:
         print(self)
         # print(result)
         # detect infeasibility
-        if feasibility.is_not_feasible(self.A, self.b):
-            print("This problem is not feasible.")
-            return
+        # if feasibility.is_not_feasible(self.A, self.b):
+        #     print("This problem is not feasible.")
+        #     return
         
         # solve the original problem
-        x1, lam1, s1, flag, iter = standard_lp.solve_standard_lp(A, b, c, max_it, tolerance)
+        x1, lam1, s1, flag, iter = standard_lp.solve_standard_lp(A, b, c, 5, tolerance)
         print(iter, flag)
         
         
@@ -134,12 +134,12 @@ if __name__ == "__main__":
     #                                    PROBLEM                                   #
     # ---------------------------------------------------------------------------- #
     A = np.array(
-        [[-2, 1,],
-         [-1, 2],
-         [1, 0],
+        [[-2, 1, 1, 0 , 0],
+         [-1, 2, 0, 1, 0],
+         [1, 0, 0, 0, 1],
         ], dtype=np.float64)
     b = np.array([2, 7, 3], dtype=np.float64)
-    c = np.array([-1, -2], dtype=np.float64)
+    c = np.array([-1, -2, 0, 0, 0], dtype=np.float64)
     
     # lo = np.array([0, 0], dtype=np.float64)
     # hi = np.array([5, 5], dtype=np.float64)

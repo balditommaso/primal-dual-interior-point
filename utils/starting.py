@@ -1,26 +1,27 @@
 import numpy as np
-from scipy.linalg import cholesky
+from scipy.linalg import cho_factor, cho_solve
 
 def starting_point(A, b, c):
+        
     AA = A @ A.T
 
     # Cholesky factorization
-    f = cholesky(AA)
-
+    f, lower = cho_factor(AA)
+    
     # Tilde
-    x = np.linalg.solve(f, b)
+    x = cho_solve((f, lower), b)
+    print(x)
     x = A.T @ x
 
-    print(A.shape, c.shape)
     lam = A @ c
-    lam = np.linalg.solve(f, lam)
+    lam = cho_solve((f, lower), lam)
 
     s = A.T @ lam
     s = c - s
 
     # Hat
-    dx = np.maximum(-1.5 * np.min(x), 0.0)
-    ds = np.maximum(-1.5 * np.min(s), 0.0)
+    dx = max(-1.5 * np.min(x), 0.0)
+    ds = max(-1.5 * np.min(s), 0.0)
 
     x = x + dx
     s = s + ds

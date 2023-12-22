@@ -7,11 +7,12 @@ function starting_point(A,b,c)
     AA = A*A'
 
     f = cholesky(AA)
-    # f = ldltfact(AA)
+        # f = ldltfact(AA)
     # f = factorize(AA)
 
     # tilde
     x = f\b
+    println(x)
     x = A'*x
 
     lambda = A*c
