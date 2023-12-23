@@ -114,18 +114,10 @@ class LPProblem:
         # presolve stage
         self.presolve()
         
-        # TODO: convert to standard form
-        #ind1, ind2, ind3, ind4 = self.convert_to_standard()
         print(self)
-        # print(result)
-        # detect infeasibility
-        # if feasibility.is_not_feasible(self.A, self.b):
-        #     print("This problem is not feasible.")
-        #     return
         
         # solve the original problem
-        x1, lam1, s1, flag, iter = standard_lp.solve_standard_lp(A, b, c, 5, tolerance)
-        print(iter, flag)
+        return standard_lp.solve_standard_lp(self.A, self.b, self.c, tolerance=tolerance, max_it=max_it)
         
         
 if __name__ == "__main__":
@@ -134,49 +126,61 @@ if __name__ == "__main__":
     #                                    PROBLEM                                   #
     # ---------------------------------------------------------------------------- #
     A = np.array(
-        [[-2, 1, 1, 0 , 0],
-         [-1, 2, 0, 1, 0],
-         [1, 0, 0, 0, 1],
+        [[ 2,  1],
+         [ 2,  3],
+         [ 4,  3],
+         [-1, -2],
         ], dtype=np.float64)
-    b = np.array([2, 7, 3], dtype=np.float64)
-    c = np.array([-1, -2, 0, 0, 0], dtype=np.float64)
+    b = np.array([120, 210, 270, -60], dtype=np.float64)
+    c = np.array([-10, -14], dtype=np.float64)
     
-    # lo = np.array([0, 0], dtype=np.float64)
-    # hi = np.array([5, 5], dtype=np.float64)
+    # standard form
+    A_std = np.hstack([A, np.eye(A.shape[0])])
+    c_std = np.concatenate((c, np.zeros((A.shape[0],))))
+
+    # ---------------------------------------------------------------------------- #
+    #                                      IPM                                     #
+    # ---------------------------------------------------------------------------- #
+    P = LPProblem(A_std, b, c_std)
+    x, lam, s, converge, n_iter, steps = P.internal_point(tolerance=1e-8)
+    
+    if converge:
+        solution = 0.0
+        for i in range(A.shape[1]):
+            solution += c[i] * x[i]
+        
+        print(f'The Algorithm is converged after {n_iter} iterations.\n' \
+              f'The Optimal solution is {solution}')
+    else:
+        print("The Algorithm is not converged to a solution!")
+        
     
     # ---------------------------------------------------------------------------- #
     #                                     PLOT                                     #
     # ---------------------------------------------------------------------------- #
-    # x_values_c1 = np.linspace(0, 10, 100)
-    # y_constraint1 = 2 + 2 * x_values_c1
-
-
-    # x_values_c2 = np.linspace(0, 10, 100)
-    # y_constraint2 = (x_values_c2 + 7) / 2
-
-
-    # x_constraint1 = np.full(100, 3)
-    # y_values_c1 = np.linspace(0, 10, 100)
-
-    # plt.figure(figsize=(8, 6))
-    # plt.plot(x_constraint1, y_values_c1)
-    # plt.plot(x_values_c2, y_constraint2)
-    # plt.plot(x_values_c1, y_constraint1)
+    plt.figure(figsize=(8, 6))
+    assert A.shape[1] == 2, "Cannot plot if it is no 2D"
+    for i in range(A.shape[0]):
+        if A[i][0] == 0:
+            print(f"ax = {b[i]}")
+        elif A[i][1] == 0:
+            print(f"ay = {b[i]}")
+        else:
+            x = np.linspace(0, 100, 1000)
+            y = (b[i] - A[i][0]*x) / A[i][1]
+        plt.plot(x, y)
+        
     
-    # plt.quiver(0, 0, c[0], c[1], angles='xy', scale_units='xy', scale=2, color='green', label='Objective Function Direction')
-
-    # plt.axhline(0, color='black', linewidth=0.5, linestyle='--')
-    # plt.axvline(0, color='black', linewidth=0.5, linestyle='--')
-    # plt.xlabel('x-axis')
-    # plt.ylabel('y-axis')
-    # plt.title('LP Problem Constraints')
-    # plt.legend()
-    # plt.grid(True)
-    # plt.show()
-
+    x_iter, y_iter, _, _, _, _ = zip(*steps)
+    plt.plot(x_iter, y_iter, marker='o', color='red')
     
-    # ---------------------------------------------------------------------------- #
-    #                                      IPM                                     #
-    # ---------------------------------------------------------------------------- #
-    P = LPProblem(A, b, c)
-    P.internal_point(tolerance=1e-8)
+    plt.quiver(0, 0, c[0], c[1], angles='xy', scale_units='xy', scale=2, color='green', label='Objective Function Direction')
+
+    plt.axhline(0, color='black', linewidth=2, linestyle='--')
+    plt.axvline(0, color='black', linewidth=2, linestyle='--')
+    plt.xlabel('x-axis')
+    plt.ylabel('y-axis')
+    plt.title('LP Problem Constraints')
+    plt.legend()
+    plt.grid(True)
+    plt.show()

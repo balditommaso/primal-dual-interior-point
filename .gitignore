@@ -4,6 +4,11 @@
 deps/deps.jl
 
 # python 
-__pychache__
+*__pychache__*
 IPM/
 .vscode
+*.pyc
+solver/__pycache__/standard_lp.cpython-39.pyc
+utils/__pycache__/starting.cpython-39.pyc
+solver/__pycache__/standard_lp.cpython-39.pyc
+utils/__pycache__/starting.cpython-39.pyc

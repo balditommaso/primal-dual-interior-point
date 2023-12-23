@@ -2,16 +2,18 @@ from utils import starting, utils
 import numpy as np
 import scipy
 
-def solve_standard_lp(A, b, c, max_it=5, tolerance=1e-8, verbose=False):    
+def solve_standard_lp(A, b, c, max_it=5, tolerance=1e-8):    
     m, n = A.shape
+    points = []
     
     # compute initial value
-    
     x0, lam0, s0 = starting.starting_point(A,b,c)
+    
     
     for iter in range(max_it+1):
         print('-'*80)
         print(f'iter [{iter}]:\nx:\t{x0},\nlam:\t{lam0},\ns:\t{s0}')
+        points.append(x0)
         
         f3, pivots = fact3(A, x0, s0)
         rb = A @ x0 - b
@@ -22,14 +24,12 @@ def solve_standard_lp(A, b, c, max_it=5, tolerance=1e-8, verbose=False):
         # compute alpha_aff^pr, alpha_aff^dual, mu_aff
         alpha_aff_pri = utils.alpha_max(x0, x_aff, 1.0)
         alpha_aff_dual = utils.alpha_max(s0, s_aff, 1.0)
-        print(alpha_aff_pri, alpha_aff_dual)
         
         mu = np.mean(rxs, dtype=np.float64)
         # Calculate mu_aff
         mu_aff = np.dot(x0 + alpha_aff_pri * x_aff, s0 + alpha_aff_dual * s_aff) / n
         
         # centering parameter sigma
-        
         sigma = (mu_aff/mu) ** 3
         
         rb = np.zeros((m,))
@@ -48,12 +48,12 @@ def solve_standard_lp(A, b, c, max_it=5, tolerance=1e-8, verbose=False):
         
         alpha_pri = min(0.99 * alpha_max_pri, 1)
         alpha_dual = min(0.99 * alpha_max_dual, 1)
-
+        
             
         if alpha_pri > 1e308 or alpha_dual > 1e308:
             # TODO: check this part
             print("this problem is unbounded")
-            return x0, lam0, s0, False, iter
+            return x0, lam0, s0, False, iter, points
 
         x1 = x0 + alpha_pri * dx
         lam1 = lam0 + alpha_dual * dlam
@@ -61,7 +61,6 @@ def solve_standard_lp(A, b, c, max_it=5, tolerance=1e-8, verbose=False):
         
         # termination
         r1 = np.linalg.norm(A @ x1 - b) / (1 + np.linalg.norm(b))
-        print("r1", r1)
         if r1 < tolerance:
             r2 = np.linalg.norm(A.T @ lam1 + s1 - c) / (1 + np.linalg.norm(c))
             
@@ -70,10 +69,10 @@ def solve_standard_lp(A, b, c, max_it=5, tolerance=1e-8, verbose=False):
                 r3 = np.abs(cx - np.dot(b, lam1)) / (1 + np.abs(cx))
                 
                 if r3 < tolerance:
-                    return x1, lam1, s1, True, iter
+                    return x1, lam1, s1, True, iter, points
                 
         if iter == max_it:
-            return x1, lam1, s1, False, max_it
+            return x1, lam1, s1, False, max_it, points
 
         x0 = x1
         lam0 = lam1
@@ -111,6 +110,5 @@ def solve3(f, pivots, rb, rc, rxs):
     dlam = b[:m]
     dx = b[m:m+n]
     ds = b[m+n:]
-    print("Direction: ",dlam, dx, ds)
     # Return the solutions
     return dlam.astype(np.float64), dx.astype(np.float64), ds.astype(np.float64)

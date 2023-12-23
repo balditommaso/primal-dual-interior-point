@@ -5,7 +5,7 @@ function solve_standardlp(A,b,c,maxit=5,tol=1e-8,verbose=false)
 
     ### whether scaling is used
     
-    scaling = 1
+    scaling = 0
 
     m,n = size(A)
 
@@ -88,10 +88,12 @@ function solve_standardlp(A,b,c,maxit=5,tol=1e-8,verbose=false)
             sind = argmin(s1_dual)
             # @test s1_dual[sind] == 0
             f_dual = (gamma_f*mu_p/x1_pri[sind]-s0[sind])/alpha_max_dual/ds[sind]
-
+            
             alpha_pri = max(1-gamma_f, f_pri)*alpha_max_pri
             alpha_dual = max(1-gamma_f, f_dual)*alpha_max_dual
         end
+        println(alpha_pri)
+        println(alpha_dual)
 
         # decide if the problem is unbounded
 
