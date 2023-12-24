@@ -14,7 +14,7 @@ def plot_LP(A, b, c, steps, max_scale=100):
         else:
             x = np.linspace(0, max_scale, 1000)
             y = (b[i] - A[i][0]*x) / A[i][1]
-        plt.plot(x, y)
+        plt.plot(x, y, 'k')
         
     # plot steps of the algorithm
     x_iter, y_iter, *_ = zip(*steps)
@@ -53,7 +53,7 @@ def plot_QP(A, b, c, Q, steps, max_scale=100):
         else:
             x = np.linspace(0, max_scale, 1000)
             y = (b[i] - A[i][0]*x) / A[i][1]
-        plt.plot(x, y)
+        plt.plot(x, y, 'k')
         
     # plot steps of the algorithm
     x_iter, y_iter, *_ = zip(*steps)
