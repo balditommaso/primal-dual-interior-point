@@ -1,5 +1,5 @@
 import numpy as np
-from solver import standard_lp
+import standard_lp
 
 def is_not_feasible(A, b):
     m, n = A.shape
