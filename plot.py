@@ -21,7 +21,7 @@ def plot_LP(A, b, c, steps, max_scale=100):
     plt.plot(x_iter, y_iter, marker='o', color='red')
     
     # plot objective function
-    plt.quiver(0, 0, c[0], c[1], angles='xy', scale_units='xy', scale=2, color='green', label='Objective Function Direction')
+    plt.quiver(0, 0, -c[0], -c[1], angles='xy', scale_units='xy', scale=2, color='green', label='Objective Function Direction')
 
     plt.axhline(0, color='black', linewidth=2, linestyle='--')
     plt.axvline(0, color='black', linewidth=2, linestyle='--')
