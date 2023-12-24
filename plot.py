@@ -8,9 +8,11 @@ def plot_LP(A, b, c, steps, max_scale=100):
     # plot constraints
     for i in range(A.shape[0]):
         if A[i][0] == 0:
-            print(f"ax = {b[i]}")
+            y = np.full(1000, b[i] / A[i][1])
+            x = np.linspace(0, max_scale, 1000)
         elif A[i][1] == 0:
-            print(f"ay = {b[i]}")
+            x = np.full(1000, b[i] / A[i][0])
+            y = np.linspace(0, max_scale, 1000)
         else:
             x = np.linspace(0, max_scale, 1000)
             y = (b[i] - A[i][0]*x) / A[i][1]
@@ -47,9 +49,11 @@ def plot_QP(A, b, c, Q, steps, max_scale=100):
     # plot constraints
     for i in range(A.shape[0]):
         if A[i][0] == 0:
-            print(f"ax = {b[i]}")
+            y = np.full(1000, b[i] / A[i][1])
+            x = np.linspace(0, max_scale, 1000)
         elif A[i][1] == 0:
-            print(f"ay = {b[i]}")
+            x = np.full(1000, b[i] / A[i][0])
+            y = np.linspace(0, max_scale, 1000)
         else:
             x = np.linspace(0, max_scale, 1000)
             y = (b[i] - A[i][0]*x) / A[i][1]
