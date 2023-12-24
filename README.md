@@ -1,27 +1,22 @@
-# Primal-dual Interior-point Solver for Linear Programming
+# Primal-dual Interior-point Solver
 
-This is a course project for CS520: Computational Methods for Optimization collaborated with [Xin Ye](https://github.com/xinye83). The complete algorithms and experimental result are in the [report](./report.pdf).
+This is a course project for Symbolic and Evolutionary Artificial Intelligence course at the University of Pisa. 
 
 ## Features
 
-- Julia implementation
+- Python implementation
 
 - Presolve stage
 
-- Mehrotra's predictor-corrector algorithm
+- Mehrotra's predictor-corrector algorithm for Linear Programming Problem and Quadratic Programming Problem
+
+- Solution to Lexicographic MOQP available soon
 
 ## Requirements
 
-- [Julia](https://julialang.org/) (v1.1)
-
-- [MatrixDepot](https://github.com/JuliaMatrices/MatrixDepot.jl) (v0.8): test matrix collection for Julia
+- available soon
 
 ## Usage
 
-``` shell
-git clone https://github.com/dlguo/primal-dual-interior-point.git
-cd primal-dual-interior-point
-julia test.jl
-```
-
-In the interactive interface, choose 9 preset test problem in `LPnetlib` or use your own dataset.
+- install the dependencies from requirements.txt
+- run the "test" notebook
