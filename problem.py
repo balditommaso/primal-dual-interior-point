@@ -1,7 +1,7 @@
 import numpy as np
 from standard_lp import solve_standard_lp
 from standard_qp import solve_standard_qp
-from plot import plot_LP
+from plot import plot_LMOLP_3d
 
 class LPProblem:
     
@@ -69,7 +69,6 @@ class LPProblem:
         inf = 1e300
         
         m, n0 = self.A.shape
-        print(np.inf > 1e300)
         index1 = np.where((self.lo < -inf) & (self.hi > inf))[0] + 1
         index2 = np.where((self.lo >= -inf) & (self.hi > inf))[0] + 1
         index3 = np.where((self.lo < -inf) & (self.hi <= inf))[0] + 1
@@ -229,11 +228,11 @@ class LMOPProblems:
                                                                     max_it=max_it)
                 # grad = Qx + c
                 grad = obj['Q'] @ x + c
-                
                 # solution
                 solution = 0
                 for i in range(x.shape[0]):
                     solution += grad[i] * x[i]
+
             else:
                 x, lam, s, flag, n_iter, points = solve_standard_lp(self.A,
                                                                     self.b,
@@ -254,7 +253,7 @@ class LMOPProblems:
                 self.A = np.vstack([self.A, grad])
             else:
                 self.A = np.vstack([self.A, c])
+                
             self.b = np.hstack([self.b, solution])
-            # plot_LP(self.A[:,:2], self.b, np.array([0, 0]), steps, max_scale=15)
         
         return x, lam, s, True, iter, steps

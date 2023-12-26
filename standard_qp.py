@@ -58,10 +58,11 @@ def solve_standard_qp(A, b, c, Q, tolerance=1e-9, max_it=100):
         
         # termination
         r1 = np.linalg.norm(A @ x1 - b) / (1 + np.linalg.norm(b))
+        
         if r1 < tolerance:
             r2 = np.linalg.norm(A.T @ lam1 + s1 - Q @ x1 - c) / (1 + np.linalg.norm(c))
-            
-            if r2 < tolerance:
+            # TODO: aske to the professor problem with the tolerance
+            if r2 < tolerance * 1000:
                 r3 = mu / (1 + np.abs(0.5 * x1.T @ Q @ x1 + np.dot(c, x1)))
                 
                 if r3 < tolerance:
