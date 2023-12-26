@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
+
 def plot_LP(A, b, c, steps, max_scale=100):
     assert A.shape[1] == 2, "Cannot plot if it is no 2D"
     plt.figure(figsize=(8, 6))
@@ -24,6 +26,57 @@ def plot_LP(A, b, c, steps, max_scale=100):
     
     # plot objective function
     plt.quiver(0, 0, -c[0], -c[1], angles='xy', scale_units='xy', scale=2, color='green', label='Objective Function Direction')
+
+    plt.axhline(0, color='black', linewidth=2, linestyle='--')
+    plt.axvline(0, color='black', linewidth=2, linestyle='--')
+    plt.xlabel('x-axis')
+    plt.ylabel('y-axis')
+    plt.title('LP Problem')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+    
+    
+def plot_LMOLP(A, b, objectives, steps, max_scale=100):
+    assert A.shape[1] == 2, "Cannot plot if it is no 2D"
+    plt.figure(figsize=(8, 6))
+    
+    # plot constraints
+    for i in range(A.shape[0]):
+        if A[i][0] == 0:
+            y = np.full(1000, b[i] / A[i][1])
+            x = np.linspace(0, max_scale, 1000)
+        elif A[i][1] == 0:
+            x = np.full(1000, b[i] / A[i][0])
+            y = np.linspace(0, max_scale, 1000)
+        else:
+            x = np.linspace(0, max_scale, 1000)
+            y = (b[i] - A[i][0]*x) / A[i][1]
+        plt.plot(x, y, 'k')
+        
+    # plot steps of the algorithm
+    x_iter, y_iter, *_ = zip(*steps)
+    plt.plot(x_iter, y_iter, marker='o', color='red')
+    
+    # plot objective function
+    for index, obj in enumerate(objectives, 1):
+        c = obj['c']
+        Q = obj['Q']
+        if obj['Q'] is None:
+            plt.quiver(0, 0, -c[0], -c[1], 
+                       angles='xy', 
+                       scale_units='xy', 
+                       scale=2, 
+                       color=colors[index-1], 
+                       label=f'Objective Function {index}')
+        else:
+            # quadratic objective function
+            quadratic_part = lambda x, y: 0.5 * (Q[0, 0] * x**2 + (Q[0, 1] + Q[1, 0]) * x * y + Q[1, 1] * y**2) + c[0] * x + c[1] * y
+            x_range = np.linspace(0, max_scale, 1000)
+            y_range = np.linspace(0, max_scale, 1000)
+            X, Y = np.meshgrid(x_range, y_range)
+            Z = quadratic_part(X, Y)
+            plt.contour(X, Y, Z, levels=40, cmap='viridis') 
 
     plt.axhline(0, color='black', linewidth=2, linestyle='--')
     plt.axvline(0, color='black', linewidth=2, linestyle='--')

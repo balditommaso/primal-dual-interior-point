@@ -2,12 +2,16 @@ from utils.utils import alpha_max, starting_point
 import numpy as np
 import scipy
 
-def solve_standard_lp(A, b, c, max_it=5, tolerance=1e-8):    
+def solve_standard_lp(A, b, c, max_it=5, tolerance=1e-8, start=None):    
     m, n = A.shape
     points = []
     
     # compute initial value
-    x0, lam0, s0 = starting_point(A,b,c)
+    x0, lam0, s0 = None, None, None
+    if start is None:
+        x0, lam0, s0 = starting_point(A,b,c)
+    else:
+        x0, lam0, s0 = start
     
     
     for iter in range(max_it+1):
