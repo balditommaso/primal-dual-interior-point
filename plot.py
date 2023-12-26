@@ -38,7 +38,7 @@ def plot_LP(A, b, c, steps, max_scale=100):
     plt.show()
     
     
-def plot_LMOLP(A, b, objectives, steps, max_scale=100):
+def plot_LMOP(A, b, objectives, steps, max_scale=100):
     assert A.shape[1] == 2, "Cannot plot if it is no 2D"
     plt.figure(figsize=(8, 6))
     
