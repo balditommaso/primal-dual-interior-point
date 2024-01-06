@@ -1,27 +1,31 @@
-from utils.utils import alpha_max, starting_point_qp, starting_point_lp
+from utils.utils import alpha_max, starting_point_qp
 import numpy as np
 import scipy
 
-def solve_standard_qp(A, b, c, Q, tolerance=1e-9, max_it=100, start=None):
-    m, n = A.shape
+def solve_variant_qp(A, b, objectives, tolerance=1e-9, max_it=100):
+    
     points = []
     
-    # compute initial value
-    x0, lam0, s0 = None, None, None
-    if start is None:
-        if Q is not None:
-            x0, lam0, s0 = starting_point_qp(A, b, c, Q)
-        else:
-            x0, lam0, s0 = starting_point_lp(A, b, c)
-    else:
-        x0, lam0, s0 = start
+    # update A by adding column of zeros due to the new variable
+    m, n = A.shape
+    # rewrite the everything in a single objective function
+    enablers = np.zeros(len(objectives)) 
+    optimal_points = np.zeros((len(objectives), n))
+    optimal_solutions = np.zeros((len(objectives),))
+    enablers[0] = 1
+    print(n)
+    c = update_c(objectives, enablers, optimal_points, optimal_solutions, n)
+    Q = update_Q(objectives, enablers, optimal_points, n)
+    
+    print(c.shape, Q.shape)
+    x0, lam0, s0 = starting_point_qp(A, b, c, Q)
     
     for iter in range(max_it+1):
         print('-'*80)
         print(f'iter [{iter}]:\nx:\t{x0},\nlam:\t{lam0},\ns:\t{s0}')
         points.append(x0)
         
-        f3, pivots = fact3(A, x0, s0, Q)
+        f3, pivots = fact3(A, x0, s0, Q, c, enablers, optimal_points, optimal_solutions)
         
         rb = A @ x0 - b
         rc = A.T @ lam0 + s0 - Q @ x0 - c
@@ -66,14 +70,13 @@ def solve_standard_qp(A, b, c, Q, tolerance=1e-9, max_it=100, start=None):
         
         # termination
         r1 = np.linalg.norm(A @ x1 - b) / (1 + np.linalg.norm(b))
-        print(r1)
+        
         if r1 < tolerance:
             r2 = np.linalg.norm(A.T @ lam1 + s1 - Q @ x1 - c) / (1 + np.linalg.norm(c))
             # TODO: aske to the professor problem with the tolerance
-            print(r2)
-            if r2 < tolerance * 10000:
+            if r2 < tolerance * 1000:
                 r3 = mu / (1 + np.abs(0.5 * x1.T @ Q @ x1 + np.dot(c, x1)))
-                print(r3)
+                
                 if r3 < tolerance:
                     return x1, lam1, s1, True, iter, points
                 
@@ -85,8 +88,40 @@ def solve_standard_qp(A, b, c, Q, tolerance=1e-9, max_it=100, start=None):
         s0 = s1
         
         
+def update_c(objectives, enablers, optimal_points, optimal_solutions, n_var):
+    # build the c vector
+    c = np.zeros((n_var,))
+    c_v = np.zeros((len(objectives) - 1,))
+    for index, obj in enumerate(objectives):
+        c += enablers[index] * obj['c']
+        if index > 0:
+            for i in range(index):
+                c_v[i] = enablers[index] * (objectives[i]['c'].T @ optimal_points[i] - optimal_solutions[i])
+                
+    c[-c_v.shape[0]:] = c_v
+    print(c)
+    return c
         
-def fact3(A, x, s, Q):
+        
+def update_Q(objectives, enablers, optimal_points, n_var):
+    # build the Q matrix
+    Q = np.zeros((n_var ,n_var))
+    Q_v = np.zeros((len(objectives) - 1, n_var))
+
+    for index, obj in enumerate(objectives):
+        Q += enablers[index] * obj['Q']
+        if index > 0:
+            for i in range(index):
+                Q_v[i] = enablers[index] * (optimal_points[i].T @ objectives[i]['Q'])
+                
+    Q[-Q_v.shape[0]:, :] = Q_v
+    Q[:, -Q_v.shape[0]:] = Q_v.T
+
+    print(Q)
+    return Q
+
+        
+def fact3(A, x, s, Q, c, enablers, optimal_points, optimal_solutions):
     m, n = A.shape
     
     S = np.zeros((s.shape[0], s.shape[0]))
@@ -99,6 +134,20 @@ def fact3(A, x, s, Q):
     M3 = np.hstack((np.zeros((n, m)), S, X))
     M = np.vstack((M1, M2, M3))
     
+    # change the matrix M with the new variables
+    for i in range(enablers.shape[0] - 1):
+        m_M, n_M = M.shape
+        # compute the new column for the new variable
+        eps = enablers[i + 1] * (optimal_points[i].T @ Q + c)
+        f_hat = enablers[i + 1] * (optimal_points[i].T @ Q @ x + c.T @ x - optimal_solutions[i])
+        col = np.hstack([np.zeros(m), eps, np.zeros(n + i), f_hat])
+        print(np.vstack([M, np.zeros(n_M)]), col.T)
+        M = np.hstack([
+            np.vstack([M, np.zeros(n_M)]),
+            col.T,
+        ])
+    
+    print(M)
     f, pivots = scipy.linalg.lu_factor(M)
 
     return f.astype(np.float64), pivots

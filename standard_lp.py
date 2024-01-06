@@ -1,4 +1,4 @@
-from utils.utils import alpha_max, starting_point
+from utils.utils import alpha_max, starting_point_lp
 import numpy as np
 import scipy
 
@@ -9,7 +9,7 @@ def solve_standard_lp(A, b, c, max_it=5, tolerance=1e-8, start=None):
     # compute initial value
     x0, lam0, s0 = None, None, None
     if start is None:
-        x0, lam0, s0 = starting_point(A,b,c)
+        x0, lam0, s0 = starting_point_lp(A,b,c)
     else:
         x0, lam0, s0 = start
     

@@ -1,6 +1,7 @@
 import numpy as np
 from standard_lp import solve_standard_lp
 from standard_qp import solve_standard_qp
+from variant_qp import solve_variant_qp
 from plot import plot_LMOLP_3d
 
 class LPProblem:
@@ -165,12 +166,7 @@ class QPProblem:
     
     
 class LMOPProblems:
-    '''
-    The idea is to apply a preemptive approach, which usually has problem,
-    with quadratic objectives because if they are added as constrains we 
-    cannot use anymore IPM, the idea is to add the as constrain the tangent
-    plane in the best solution of that iteration  
-    '''
+    
     def __init__(self, A, b, objectives, lo=None, hi=None):
         self.A = A
         self.b = b
@@ -181,11 +177,12 @@ class LMOPProblems:
             self.lo = np.full_like(A.shape[1], -np.inf, dtype=np.float64)
         if hi is None:
             self.hi = np.full_like(A.shape[1], np.inf, dtype=np.float64)
+
             
     def __str__(self) -> str:
         text = 'Objective function sorted:\n'
         for index, obj in enumerate(self.objectives, 1):
-            text += f"[{index}]\tlinear {obj['c']}\t quadratic {obj['Q']}\n"
+            text += f"[#{index}]\nlinear\n{obj['c']}\nquadratic\n{obj['Q']}\n"
         
         return text + f"A {self.A.shape}:\n{self.A}\n" \
                f"b {self.b.shape}:\n{self.b}\n" \
@@ -193,56 +190,95 @@ class LMOPProblems:
                f"hi {self.hi.shape}:\n{self.hi}"
 
 
-    def internal_point(self, tolerance, max_it=100):
+    @staticmethod
+    def update_constraints(A, b, new_row, value, n_col, tolerance=1e-6):
+        '''
+        This method is used to update the constraints of the preemptive approach 
+        by checking if the new constraints it's not linearly dependant respect to 
+        the existing ones, if the new constrain is linear dependent respect an 
+        already existing one, I can just update it. 
+        '''
+        norm_new_row = np.linalg.norm(new_row[:n_col])
+        for i in range(A.shape[0]):
+            print(A[i, :n_col], new_row[:n_col])
+            inner_prod = np.abs(np.inner(A[i, :n_col], new_row[:n_col]))
+            norm_row_i = np.linalg.norm(A[i, :n_col])
+            diff = float(abs(inner_prod - norm_row_i * norm_new_row))
+            print(inner_prod, norm_new_row * norm_row_i)
+            if diff < tolerance:
+                print(f"The row {i} is liner dependent respect to the new row")
+                # update the already existing constraint
+                A[i] = np.hstack([A[i, :n_col], np.zeros(A.shape[1]-n_col)])
+                # b[i] = value
+                return A, b, True
+                
+                
+        print("There are no constraints liner dependent respect to the new one")
+        A = np.vstack([A, new_row])
+        b = np.hstack([b, value])
+        return A, b, False
+
+
+    def internal_point_preemptive(self, tolerance, max_it=100):
+        '''
+        The idea is to apply a preemptive approach, which usually has problem,
+        with quadratic objectives because if they are added as constrains we 
+        cannot use anymore IPM, the idea is to add the as constrain the tangent
+        plane in the best solution of that iteration  
+        '''
+        # convert to standard form 
         m, n = self.A.shape
+        self.A = np.hstack([self.A, np.eye(m)])
         
         assert self.b.shape[0] == m
         assert len(self.objectives) > 0
         
         print(self)
         
-        # ---------------------------------------------------------------------------- #
-        #                              preemptive approach                             #
-        # ---------------------------------------------------------------------------- #
         # init the variables
         iter = 0
         steps = []
         flag = True
         x = lam = s = None
         start = None
+        
+        # preemptive iteration
         for index, obj in enumerate(self.objectives, 1):
             print('-'*80)
             print(f"Solving #{index} objective")
+            
             # convert to standard form
-            c = np.concatenate((obj['c'], np.zeros((m,))))
+            obj['c'] = np.concatenate((obj['c'], np.zeros((m,))))
             if obj['Q'] is not None:
                 assert obj['Q'].shape[0] == obj['Q'].shape[1]
                 obj['Q'] = np.pad(obj['Q'], (0, m), 'constant', constant_values=0)
+                
             # solve the problem
             if obj['Q'] is not None:
                 x, lam, s, flag, n_iter, points = solve_standard_qp(self.A, 
                                                                     self.b,
-                                                                    c, 
+                                                                    obj['c'], 
                                                                     obj['Q'], 
                                                                     tolerance=tolerance, 
-                                                                    max_it=max_it)
+                                                                    max_it=max_it,
+                                                                    start=start)
                 # grad = Qx + c
-                grad = obj['Q'] @ x + c
+                grad = obj['Q'] @ x + obj['c']
                 # solution
                 solution = 0
                 for i in range(x.shape[0]):
                     solution += grad[i] * x[i]
-
             else:
                 x, lam, s, flag, n_iter, points = solve_standard_lp(self.A,
                                                                     self.b,
-                                                                    c,
+                                                                    obj['c'],
                                                                     tolerance=tolerance,
                                                                     max_it=max_it,
                                                                     start=start)
-                solution = np.sum(c * x) 
+                solution = np.sum(obj['c'] * x) 
             iter += n_iter
             steps.extend(points)
+            
             # not converged
             if not flag or iter >= max_it:
                 print(f"Algorithm not converged at the {index} objective function")
@@ -250,10 +286,53 @@ class LMOPProblems:
                         
             # update constraints
             if obj['Q'] is not None:
+                # self.A, self.b, restart = self.update_constraints(self.A, self.b, grad, solution, n)
                 self.A = np.vstack([self.A, grad])
             else:
-                self.A = np.vstack([self.A, c])
+                # self.A, self.b, restart = self.update_constraints(self.A, self.b, obj['c'], solution, n)
+                self.A = np.vstack([self.A, obj['c']])
                 
             self.b = np.hstack([self.b, solution])
+            # if restart:
+            #     start = (x, lam, s)
+            # else:
+            #     start = None
+            # print(self)
         
         return x, lam, s, True, iter, steps
+    
+    
+    def internal_point_penality(self, tolerance, max_it=100):
+        '''
+        The idea of this approach is to rewrite the objective functions 
+        in a single objective function which incrementally activate the 
+        directions and the penalities
+        '''
+        m, n = self.A.shape
+        # standard form
+        self.A = np.hstack([self.A, np.eye(m), np.zeros((m, len(self.objectives) - 1))])
+        for obj in self.objectives:
+            obj['c'] = np.concatenate((obj['c'], np.zeros((m + len(self.objectives) - 1,))))
+            if obj['Q'] is not None:
+                assert obj['Q'].shape[0] == obj['Q'].shape[1]
+                obj['Q'] = np.pad(obj['Q'], (0, m + len(self.objectives) - 1), 
+                                  'constant', 
+                                  constant_values=0)
+            else:
+                obj['Q'] = np.zeros((obj['c'].shape[0], obj['c'].shape[0]))
+        
+        # check the dimensions
+        assert self.b.shape[0] == m
+        assert len(self.objectives) > 0
+        
+        print(self)
+        
+        # solve the problem by updating the objective functions
+        x, lam, s, flag, n_iter, points = solve_variant_qp(self.A, 
+                                                            self.b,
+                                                            self.objectives, 
+                                                            tolerance=tolerance, 
+                                                            max_it=max_it)
+
+        return x, lam, s, flag, n_iter, points
+        
