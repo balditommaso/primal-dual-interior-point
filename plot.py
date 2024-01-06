@@ -63,7 +63,9 @@ def plot_LMOP(A, b, objectives, steps, max_scale=100):
     for index, obj in enumerate(objectives, 1):
         c = obj['c']
         Q = obj['Q']
-        if obj['Q'] is None:
+        if not np.any(Q):
+            Q = None
+        if Q is None:
             plt.quiver(0, 0, -c[0], -c[1], 
                        angles='xy', 
                        scale_units='xy', 

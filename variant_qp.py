@@ -13,11 +13,8 @@ def solve_variant_qp(A, b, objectives, tolerance=1e-9, max_it=100):
     optimal_points = np.zeros((len(objectives), n))
     optimal_solutions = np.zeros((len(objectives),))
     enablers[0] = 1
-    print(n)
-    c = update_c(objectives, enablers, optimal_points, optimal_solutions, n)
+    c = update_c(objectives, enablers, optimal_points, n)
     Q = update_Q(objectives, enablers, optimal_points, n)
-    
-    print(c.shape, Q.shape)
     x0, lam0, s0 = starting_point_qp(A, b, c, Q)
     
     for iter in range(max_it+1):
@@ -78,7 +75,21 @@ def solve_variant_qp(A, b, objectives, tolerance=1e-9, max_it=100):
                 r3 = mu / (1 + np.abs(0.5 * x1.T @ Q @ x1 + np.dot(c, x1)))
                 
                 if r3 < tolerance:
-                    return x1, lam1, s1, True, iter, points
+                    # increment move the enbalers and store the optimal solution
+                    current = np.argmax(enablers)
+                    optimal_points[current] = x1
+                    optimal_solutions[current] = 0.5 * x1.T @ objectives[current]['Q'] @ x1 + objectives[current]['c'].T @ x1
+
+                    # I have solved the last objectives
+                    if current == enablers.shape[0] - 1:
+                        return x1, lam1, s1, True, iter, points
+                    
+                    enablers[current], enablers[current + 1] = 0, 1 
+                    c = update_c(objectives, enablers, optimal_points, n)
+                    Q = update_Q(objectives, enablers, optimal_points, n)
+                    print('-' * 80)
+                    print("Next objective")
+                    # x0, lam0, s0 = starting_point_qp(A, b, c, Q)
                 
         if iter == max_it:
             return x1, lam1, s1, False, max_it, points
@@ -88,18 +99,12 @@ def solve_variant_qp(A, b, objectives, tolerance=1e-9, max_it=100):
         s0 = s1
         
         
-def update_c(objectives, enablers, optimal_points, optimal_solutions, n_var):
+def update_c(objectives, enablers, optimal_points, n_var):
     # build the c vector
     c = np.zeros((n_var,))
     c_v = np.zeros((len(objectives) - 1,))
     for index, obj in enumerate(objectives):
         c += enablers[index] * obj['c']
-        if index > 0:
-            for i in range(index):
-                c_v[i] = enablers[index] * (objectives[i]['c'].T @ optimal_points[i] - optimal_solutions[i])
-                
-    c[-c_v.shape[0]:] = c_v
-    print(c)
     return c
         
         
@@ -110,14 +115,15 @@ def update_Q(objectives, enablers, optimal_points, n_var):
 
     for index, obj in enumerate(objectives):
         Q += enablers[index] * obj['Q']
-        if index > 0:
-            for i in range(index):
-                Q_v[i] = enablers[index] * (optimal_points[i].T @ objectives[i]['Q'])
-                
+
+    for i in range(1, len(objectives)):
+        penality = 0
+        for j in range(i):
+            penality += optimal_points[j].T @ objectives[j]['Q']
+        Q_v[i-1] = enablers[i] * penality
+        
     Q[-Q_v.shape[0]:, :] = Q_v
     Q[:, -Q_v.shape[0]:] = Q_v.T
-
-    print(Q)
     return Q
 
         
@@ -141,13 +147,17 @@ def fact3(A, x, s, Q, c, enablers, optimal_points, optimal_solutions):
         eps = enablers[i + 1] * (optimal_points[i].T @ Q + c)
         f_hat = enablers[i + 1] * (optimal_points[i].T @ Q @ x + c.T @ x - optimal_solutions[i])
         col = np.hstack([np.zeros(m), eps, np.zeros(n + i), f_hat])
-        print(np.vstack([M, np.zeros(n_M)]), col.T)
         M = np.hstack([
             np.vstack([M, np.zeros(n_M)]),
-            col.T,
+            col.reshape(-1, 1),
         ])
-    
-    print(M)
+        
+    # remove zeros rows/columns
+    non_zero_rows = np.any(M != 0, axis=1)
+    non_zero_columns = np.any(M != 0, axis=0)
+    non_zero = np.logical_and(non_zero_rows, non_zero_columns)
+    M = M[non_zero][:, non_zero]
+    print(M[:, -1])
     f, pivots = scipy.linalg.lu_factor(M)
 
     return f.astype(np.float64), pivots
@@ -156,14 +166,17 @@ def fact3(A, x, s, Q, c, enablers, optimal_points, optimal_solutions):
 def solve3(f, pivots, rb, rc, rxs):
     m = rb.shape[0]
     n = rc.shape[0]
+    t = rxs.shape[0]
     
     b = np.hstack((-rb, -rc, -rxs), dtype=np.float64)
-    # Solve the linear system of equations A * x = b
+    # add zeros for the eps variables
+    b = np.hstack([b, np.zeros((f.shape[0] - b.shape[0],))])
+    # solve the linear system of equations A * x = b
     b = scipy.linalg.lu_solve((f, pivots), b.T)
 
-    # Extract the solution into separate arrays for dlam, dx, and ds
+    # extract the solution into separate arrays for dlam, dx, and ds
     dlam = b[:m]
     dx = b[m:m+n]
-    ds = b[m+n:]
-    # Return the solutions
+    ds = b[m+n:m+n+t]
+    # return the solutions
     return dlam.astype(np.float64), dx.astype(np.float64), ds.astype(np.float64)
