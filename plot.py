@@ -85,7 +85,7 @@ def plot_LMOP(A, b, objectives, steps, max_scale=100):
     plt.axvline(0, color='black', linewidth=2, linestyle='--')
     plt.xlabel('x-axis')
     plt.ylabel('y-axis')
-    plt.title('LP Problem')
+    plt.title('LMOP Problem')
     plt.legend()
     plt.grid(True)
     plt.show()
