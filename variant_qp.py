@@ -13,8 +13,10 @@ def solve_variant_qp(A, b, objectives, tolerance=1e-9, max_it=100):
     optimal_points = np.zeros((len(objectives), n))
     optimal_solutions = np.zeros((len(objectives),))
     enablers[0] = 1
+    
     c = update_c(objectives, enablers, optimal_solutions, n)
     Q = update_Q(objectives, enablers, optimal_points, n)
+    
     x0, lam0, s0 = starting_point_qp(A, b, c, Q)
 
     for iter in range(max_it+1):
@@ -71,7 +73,7 @@ def solve_variant_qp(A, b, objectives, tolerance=1e-9, max_it=100):
         if r1 < tolerance:
             r2 = np.linalg.norm(A.T @ lam1 + s1 - Q @ x1 - c) / (1 + np.linalg.norm(c))
             # TODO: aske to the professor problem with the tolerance
-            if r2 < tolerance * 1000:
+            if r2 < tolerance * 100:
                 r3 = mu / (1 + np.abs(0.5 * x1.T @ Q @ x1 + np.dot(c, x1)))
                 
                 if r3 < tolerance:
@@ -123,7 +125,7 @@ def update_Q(objectives, enablers, optimal_points, n_var):
 
     # add the  penalty
     for i in range(1, len(objectives)):
-        Q_v[i-1] = np.sum(enablers[i:]) * (0.5*optimal_points[i-1].T @ objectives[i-1]['Q'] + objectives[i-1]['c'])
+        Q_v[i-1] = np.sum(enablers[i:]) * (0.5 * optimal_points[i-1].T @ objectives[i-1]['Q'] + objectives[i-1]['c'])
 
     Q[-Q_v.shape[0]:, :] = Q_v
     Q[:, -Q_v.shape[0]:] = Q_v.T
