@@ -200,23 +200,41 @@ class LMOPProblems:
         '''
         norm_new_row = np.linalg.norm(new_row[:n_col])
         for i in range(A.shape[0]):
-            print(A[i, :n_col], new_row[:n_col])
             inner_prod = np.abs(np.inner(A[i, :n_col], new_row[:n_col]))
             norm_row_i = np.linalg.norm(A[i, :n_col])
             diff = float(abs(inner_prod - norm_row_i * norm_new_row))
-            print(inner_prod, norm_new_row * norm_row_i)
             if diff < tolerance:
                 print(f"The row {i} is liner dependent respect to the new row")
                 # update the already existing constraint
                 A[i] = np.hstack([A[i, :n_col], np.zeros(A.shape[1]-n_col)])
-                # b[i] = value
+                print(A, b)
                 return A, b, True
                 
                 
         print("There are no constraints liner dependent respect to the new one")
         A = np.vstack([A, new_row])
         b = np.hstack([b, value])
+        print(A, b)
         return A, b, False
+    
+    @staticmethod
+    def early_stopping(x, n_var, tolerance=1e-5):
+        '''
+        This method is used to terminate the algorithm if the optimal solution
+        lands close to a vertex of the polyhedron, because in that case the next 
+        objective functions will not move the optimal point from there so we can 
+        stopt the optimization
+        '''
+        # create a boolean array indicating whether each element is close to zero
+        close_to_zero_mask = np.isclose(x, 0, atol=tolerance)
+
+        # count the number of True values (elements close to zero)
+        count_close_to_zero = np.count_nonzero(close_to_zero_mask)
+
+        # check if there are at least n values close to zero
+        if count_close_to_zero >= n_var:
+            return True
+        return False
 
 
     def internal_point_preemptive(self, tolerance, max_it=100):
@@ -279,6 +297,11 @@ class LMOPProblems:
             iter += n_iter
             steps.extend(points)
             
+            # early stopping condition
+            if self.early_stopping(x, n):
+                print("The optimal solution landed on a vertex of the polyhedron")
+                return x, lam, s, True, iter, steps
+            
             # not converged
             if not flag or iter >= max_it:
                 print(f"Algorithm not converged at the {index} objective function")
@@ -293,11 +316,12 @@ class LMOPProblems:
                 self.A = np.vstack([self.A, obj['c']])
                 
             self.b = np.hstack([self.b, solution])
+            
+            # if there is no new constraint we can keep going from the the provious x , lam and s
             # if restart:
             #     start = (x, lam, s)
             # else:
             #     start = None
-            # print(self)
         
         return x, lam, s, True, iter, steps
     
