@@ -18,7 +18,7 @@ def solve_standard_qp(A, b, c, Q, tolerance=1e-9, max_it=100, start=None):
     
     for iter in range(max_it+1):
         print('-'*80)
-        print(f'iter [{iter}]:\nx:\t{x0},\nlam:\t{lam0},\ns:\t{s0}')
+        print(f'iter [{iter}]:\nx:\n{x0},\nlam:\n{lam0},\ns:\n{s0}\nf(x) = {x0 @ c + 0.5 * x0.T @ Q @ x0}')
         points.append(x0)
         
         f3, pivots = fact3(A, x0, s0, Q)

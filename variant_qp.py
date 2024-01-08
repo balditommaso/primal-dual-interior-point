@@ -13,16 +13,16 @@ def solve_variant_qp(A, b, objectives, tolerance=1e-9, max_it=100):
     optimal_points = np.zeros((len(objectives), n))
     optimal_solutions = np.zeros((len(objectives),))
     enablers[0] = 1
-    c = update_c(objectives, enablers, optimal_points, n)
+    c = update_c(objectives, enablers, optimal_solutions, n)
     Q = update_Q(objectives, enablers, optimal_points, n)
     x0, lam0, s0 = starting_point_qp(A, b, c, Q)
-    
+
     for iter in range(max_it+1):
-        print('-'*80)
-        print(f'iter [{iter}]:\nx:\t{x0},\nlam:\t{lam0},\ns:\t{s0}')
+        print('-' * 80)
+        print(f'iter [{iter}]:\nx:\n{x0},\nlam:\n{lam0},\ns:\n{s0}')
         points.append(x0)
         
-        f3, pivots = fact3(A, x0, s0, Q, c, enablers, optimal_points, optimal_solutions)
+        f3, pivots = fact3(A, x0, s0, Q)
         
         rb = A @ x0 - b
         rc = A.T @ lam0 + s0 - Q @ x0 - c
@@ -85,11 +85,10 @@ def solve_variant_qp(A, b, objectives, tolerance=1e-9, max_it=100):
                         return x1, lam1, s1, True, iter, points
                     
                     enablers[current], enablers[current + 1] = 0, 1 
-                    c = update_c(objectives, enablers, optimal_points, n)
-                    Q = update_Q(objectives, enablers, optimal_points, n)
                     print('-' * 80)
                     print("Next objective")
-                    # x0, lam0, s0 = starting_point_qp(A, b, c, Q)
+                    c = update_c(objectives, enablers, optimal_solutions, n)
+                    Q = update_Q(objectives, enablers, optimal_points, n)
                 
         if iter == max_it:
             return x1, lam1, s1, False, max_it, points
@@ -99,12 +98,18 @@ def solve_variant_qp(A, b, objectives, tolerance=1e-9, max_it=100):
         s0 = s1
         
         
-def update_c(objectives, enablers, optimal_points, n_var):
+def update_c(objectives, enablers, optimal_solutions, n_var):
     # build the c vector
     c = np.zeros((n_var,))
     c_v = np.zeros((len(objectives) - 1,))
     for index, obj in enumerate(objectives):
         c += enablers[index] * obj['c']
+    
+    for i in range(1, len(objectives)):
+        c_v[i-1] = -optimal_solutions[i-1] * np.sum(enablers[i:])
+        
+    c[-c_v.shape[0]:] = c_v
+    print(f"c:\n{c}")
     return c
         
         
@@ -116,48 +121,28 @@ def update_Q(objectives, enablers, optimal_points, n_var):
     for index, obj in enumerate(objectives):
         Q += enablers[index] * obj['Q']
 
+    # add the  penalty
     for i in range(1, len(objectives)):
-        penality = 0
-        for j in range(i):
-            penality += optimal_points[j].T @ objectives[j]['Q']
-        Q_v[i-1] = enablers[i] * penality
-        
+        Q_v[i-1] = np.sum(enablers[i:]) * (0.5*optimal_points[i-1].T @ objectives[i-1]['Q'] + objectives[i-1]['c'])
+
     Q[-Q_v.shape[0]:, :] = Q_v
     Q[:, -Q_v.shape[0]:] = Q_v.T
+    print(f"Q:\n{Q}")
     return Q
 
         
-def fact3(A, x, s, Q, c, enablers, optimal_points, optimal_solutions):
+def fact3(A, x, s, Q):
     m, n = A.shape
     
     S = np.zeros((s.shape[0], s.shape[0]))
     np.fill_diagonal(S, s)
     X = np.zeros((x.shape[0], x.shape[0]))
     np.fill_diagonal(X, x)
-    
     M1 = np.hstack((np.zeros((m, m)), A, np.zeros((m, n))))
     M2 = np.hstack((A.T, -Q, np.eye(n,n)))
     M3 = np.hstack((np.zeros((n, m)), S, X))
     M = np.vstack((M1, M2, M3))
     
-    # change the matrix M with the new variables
-    for i in range(enablers.shape[0] - 1):
-        m_M, n_M = M.shape
-        # compute the new column for the new variable
-        eps = enablers[i + 1] * (optimal_points[i].T @ Q + c)
-        f_hat = enablers[i + 1] * (optimal_points[i].T @ Q @ x + c.T @ x - optimal_solutions[i])
-        col = np.hstack([np.zeros(m), eps, np.zeros(n + i), f_hat])
-        M = np.hstack([
-            np.vstack([M, np.zeros(n_M)]),
-            col.reshape(-1, 1),
-        ])
-        
-    # remove zeros rows/columns
-    non_zero_rows = np.any(M != 0, axis=1)
-    non_zero_columns = np.any(M != 0, axis=0)
-    non_zero = np.logical_and(non_zero_rows, non_zero_columns)
-    M = M[non_zero][:, non_zero]
-    print(M[:, -1])
     f, pivots = scipy.linalg.lu_factor(M)
 
     return f.astype(np.float64), pivots

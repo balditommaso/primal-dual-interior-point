@@ -16,7 +16,7 @@ def solve_standard_lp(A, b, c, max_it=5, tolerance=1e-8, start=None):
     
     for iter in range(max_it+1):
         print('-'*80)
-        print(f'iter [{iter}]:\nx:\t{x0},\nlam:\t{lam0},\ns:\t{s0}')
+        print(f'iter [{iter}]:\nx:\t{x0},\nlam:\t{lam0},\ns:\t{s0}\nf(x) = {x0 @ c}')
         points.append(x0)
         
         f3, pivots = fact3(A, x0, s0)
