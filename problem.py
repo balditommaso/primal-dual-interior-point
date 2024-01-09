@@ -25,34 +25,6 @@ class LPProblem:
                f"lo {self.lo.shape}:\n{self.lo}\n" \
                f"hi {self.hi.shape}:\n{self.hi}"
     
-    
-    def presolve(self):
-        '''
-        Presolve the function
-        '''
-        m, n = self.A.shape
-        
-        # zero rows and columns in A
-        for i in range(m):
-            # check empty row
-            if not np.any(self.A[i, :]):
-                if self.b[i] == 0.0:
-                    # delete empty row
-                    self.A = np.delete(self.A, i, axis=0)
-                    self.b = np.delete(self.b, i)
-                else:
-                    print("This problem is infeasible")
-                    return False
-                
-        for j in range(n):
-            # check empty column
-            if not np.any(self.A[:, j]):
-                self.A = np.delete(self.A, i, 1)
-                
-                
-        # TODO: check uniquness of col and row
-        return True
-        
         
     def convert_to_standard(self):
         """
@@ -107,9 +79,6 @@ class LPProblem:
         assert self.c.shape[0] == n 
         assert self.lo.shape[0] == n 
         assert self.hi.shape[0] == n
-                
-        # presolve stage
-        self.presolve()
         
         print(self)
         
