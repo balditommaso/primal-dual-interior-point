@@ -8,6 +8,7 @@ def solve_variant_qp(A, b, objectives, tolerance=1e-9, max_it=100):
     
     # update A by adding column of zeros due to the new variable
     m, n = A.shape
+    k = len(objectives) - 1
     # rewrite the everything in a single objective function
     enablers = np.zeros(len(objectives)) 
     optimal_points = np.zeros((len(objectives), n))
@@ -19,9 +20,10 @@ def solve_variant_qp(A, b, objectives, tolerance=1e-9, max_it=100):
     
     x0, lam0, s0 = starting_point_qp(A, b, c, Q)
 
-    for iter in range(max_it+1):
+    for iter in range(max_it+1): 
         print('-' * 80)
         print(f'iter [{iter}]:\nx:\n{x0},\nlam:\n{lam0},\ns:\n{s0}')
+        
         points.append(x0)
         
         f3, pivots = fact3(A, x0, s0, Q)
@@ -29,6 +31,7 @@ def solve_variant_qp(A, b, objectives, tolerance=1e-9, max_it=100):
         rb = A @ x0 - b
         rc = A.T @ lam0 + s0 - Q @ x0 - c
         rxs = x0 * s0
+
         lam_aff, x_aff, s_aff = solve3(f3, pivots, rb, rc, rxs)
         
         # compute alpha_aff^pr, alpha_aff^dual, mu_aff
@@ -64,19 +67,23 @@ def solve_variant_qp(A, b, objectives, tolerance=1e-9, max_it=100):
             return x0, lam0, s0, False, iter, points
 
         x1 = x0 + alpha_pri * dx
+        for i in range(k):
+            x1[n-k+i] = x0[n-k+i] + dx[n-k+i]
+        
         lam1 = lam0 + alpha_dual * dlam
         s1 = s0 + alpha_dual * ds
-        
         # termination
         r1 = np.linalg.norm(A @ x1 - b) / (1 + np.linalg.norm(b))
-        
+        print("rho1", r1)
         if r1 < tolerance:
             r2 = np.linalg.norm(A.T @ lam1 + s1 - Q @ x1 - c) / (1 + np.linalg.norm(c))
             # TODO: aske to the professor problem with the tolerance
+            print("rho2", r2)
             if r2 < tolerance * 100:
                 r3 = mu / (1 + np.abs(0.5 * x1.T @ Q @ x1 + np.dot(c, x1)))
                 
-                if r3 < tolerance:
+                print("rho3", r3)
+                if r3 < tolerance * 1000:
                     # increment move the enbalers and store the optimal solution
                     current = np.argmax(enablers)
                     optimal_points[current] = x1
@@ -153,7 +160,6 @@ def fact3(A, x, s, Q):
 def solve3(f, pivots, rb, rc, rxs):
     m = rb.shape[0]
     n = rc.shape[0]
-    t = rxs.shape[0]
     
     b = np.hstack((-rb, -rc, -rxs), dtype=np.float64)
     # add zeros for the eps variables
@@ -164,6 +170,6 @@ def solve3(f, pivots, rb, rc, rxs):
     # extract the solution into separate arrays for dlam, dx, and ds
     dlam = b[:m]
     dx = b[m:m+n]
-    ds = b[m+n:m+n+t]
+    ds = b[m+n:]
     # return the solutions
     return dlam.astype(np.float64), dx.astype(np.float64), ds.astype(np.float64)
