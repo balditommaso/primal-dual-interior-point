@@ -10,11 +10,7 @@ This is a course project for Symbolic and Evolutionary Artificial Intelligence c
 
 - Mehrotra's predictor-corrector algorithm for Linear Programming Problem and Quadratic Programming Problem
 
-- Solution to Lexicographic MOQP available soon
-
-## Requirements
-
-- available soon
+- Two new IPM variant are propsed to solve LMOQP problems.
 
 ## Usage
 
