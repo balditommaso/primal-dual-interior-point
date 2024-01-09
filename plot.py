@@ -46,12 +46,12 @@ def plot_LMOP(A, b, objectives, steps, max_scale=100):
     for i in range(A.shape[0]):
         if A[i][0] == 0:
             y = np.full(1000, b[i] / A[i][1])
-            x = np.linspace(0, max_scale, 1000)
+            x = np.linspace(-5, max_scale, 1000)
         elif A[i][1] == 0:
             x = np.full(1000, b[i] / A[i][0])
-            y = np.linspace(0, max_scale, 1000)
+            y = np.linspace(-5, max_scale, 1000)
         else:
-            x = np.linspace(0, max_scale, 1000)
+            x = np.linspace(-5, max_scale, 1000)
             y = (b[i] - A[i][0]*x) / A[i][1]
         plt.plot(x, y, 'k')
         
@@ -75,8 +75,8 @@ def plot_LMOP(A, b, objectives, steps, max_scale=100):
         else:
             # quadratic objective function
             quadratic_part = lambda x, y: 0.5 * (Q[0, 0] * x**2 + (Q[0, 1] + Q[1, 0]) * x * y + Q[1, 1] * y**2) + c[0] * x + c[1] * y
-            x_range = np.linspace(0, max_scale, 1000)
-            y_range = np.linspace(0, max_scale, 1000)
+            x_range = np.linspace(-5, max_scale, 1000)
+            y_range = np.linspace(-5, max_scale, 1000)
             X, Y = np.meshgrid(x_range, y_range)
             Z = quadratic_part(X, Y)
             plt.contour(X, Y, Z, levels=40, cmap='viridis') 
