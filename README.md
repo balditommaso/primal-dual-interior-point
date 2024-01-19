@@ -1,12 +1,10 @@
 # Primal-dual Interior-point Solver
 
-This is a course project for Symbolic and Evolutionary Artificial Intelligence course at the University of Pisa. 
+This is a course project for Symbolic and Evolutionary Artificial Intelligence course at the University of Pisa. The aim of the project is to find variant of the Interior Point Method algorithm to solve Lexicographic Multi-Objective Quadratic Programming problems.
 
 ## Features
 
 - Python implementation
-
-- Presolve stage
 
 - Mehrotra's predictor-corrector algorithm for Linear Programming Problem and Quadratic Programming Problem
 
